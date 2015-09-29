@@ -74,6 +74,7 @@ def get_player_window():
   EnumWindows(EnumWindowsProc(foreach_window), 0)
 
 def player_loop():
+    global player_hwnd
     while True:
       player = run_player()
       print "Player", player.pid, "has run..."
