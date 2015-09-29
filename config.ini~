@@ -1,8 +1,0 @@
-[DEFAULT]
-IDLE_TRIGGER: 5
-PLAYER_CLASS_NAME: 'Chrome_WidgetWin_1'
-SHOW_WIN: win32con.SW_MAXIMIZE
-HIDE_WIN: win32con.SW_MINIMIZE
-PROCESS_NAME: 'chrome.exe'
-BROWSER_PATH: 'C:/Program Files/Google/Chrome/Application/chrome.exe'
-URL: 'https://mcdonalds.com.au/'
