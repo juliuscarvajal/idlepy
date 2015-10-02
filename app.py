@@ -1,4 +1,8 @@
 # This only works on Windows
+# Should handle the following fail scenarios:
+# 1. chrome.exe killed
+# 2. python killed
+# 3. content crashed TODO: SUPPORT THIS
 
 import ctypes
 import sys
@@ -15,8 +19,8 @@ Config.read('config.ini')
 try:
   IDLE_TRIGGER = int(Config.get('DEFAULT', 'IDLE_TRIGGER'))
   PLAYER_CLASS_NAME = Config.get('DEFAULT', 'PLAYER_CLASS_NAME')
-  SHOW_WIN = 5 #3
-  HIDE_WIN = 0 #6
+  SHOW_WIN = 3
+  HIDE_WIN = 6
   PROCESS_NAME = Config.get('DEFAULT', 'PROCESS_NAME')
   BROWSER_PATH = Config.get('DEFAULT', 'BROWSER_PATH')
   URL = Config.get('DEFAULT', 'URL')
@@ -37,11 +41,13 @@ IsWindowVisible = ctypes.windll.user32.IsWindowVisible
 GetClassName = ctypes.windll.user32.GetClassNameW
 ShowWindow = ctypes.windll.user32.ShowWindow
 SetConsoleCtrlHandler = ctypes.windll.kernel32.SetConsoleCtrlHandler
+IsHungAppWindow = ctypes.windll.user32.IsHungAppWindow
 
 class Player:
   def __init__(self):
     self.hwnd = None
     self.player = None
+    os.system('taskkill /f /im ' + PROCESS_NAME)
   
   def get_player_window(self):
     self.hwnd = None
@@ -59,40 +65,39 @@ class Player:
     EnumWindows(EnumWindowsProc(foreach_window), 0)    
 
   def ready(self):
+    if self.player is None or self.player.poll() is not None:
+      self.run()
+    
     if self.hwnd is None:
       self.get_player_window()
     
     return self.hwnd is not None
 
   def run(self):
-    if self.player is None or self.player.poll() is not None:
-      self.hwnd = None
-      os.system('taskkill /f /im ' + PROCESS_NAME)
-      self.player = subprocess.Popen([BROWSER_PATH, '--kiosk', '--disable-session-crashed-bubble', '--disable-infobars', URL])            
+    print "running player"
+    self.kill()    
+    self.player = subprocess.Popen([BROWSER_PATH, '--disable-session-crashed-bubble', '--disable-infobars', '--kiosk', URL])            
 
   def hide(self):
-    print "hide"
-    if self.hwnd is None:
-      self.get_player_window()
-    
     ShowWindow(self.hwnd, HIDE_WIN)
 
   def show(self):
-    print "show"
-    if self.hwnd is None:
-      self.get_player_window()
-
+    # if the player hangs, restart again. cannot test to see if it works
+    if IsHungAppWindow(self.hwnd):
+      print "hang"
+      self.kill()
+      return
+    
     ShowWindow(self.hwnd, SHOW_WIN)
 
   def kill(self):
     self.hwnd = None
     if self.player is not None:
-      self.player.terminate()
+      self.player.kill()
       self.player = None
     
-    os.system('taskkill /f /im ' + PROCESS_NAME)
-
   def exit_handler(self):
+    print "killed self"
     self.kill()
 
 if __name__ == '__main__':
@@ -115,9 +120,7 @@ if __name__ == '__main__':
   
   
   while True:
-    if player.ready() == False:
-      player.run()
-    else:      
+    if player.ready():
       if next(is_idle):
         player.show()
       else:
