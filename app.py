@@ -1,10 +1,9 @@
 # This only works on Windows
-# Should handle the following fail scenarios:
-# 1. chrome.exe killed
-# 2. python killed
-# 3. content crashed TODO: SUPPORT THIS
+# TODO: Detect player crash (chrome) and react to it.
 
 import ctypes
+from ctypes import Structure, c_ulong, byref
+
 import sys
 import os
 import subprocess
@@ -31,7 +30,7 @@ except:
   HIDE_WIN = 6
   PROCESS_NAME = 'chrome.exe'
   BROWSER_PATH = 'C:/Program Files/Google/Chrome/Application/chrome.exe'
-  URL = 'https://mcdonalds.com.au/'
+  URL = ''
 
 # Shortcuts to win32 apis
 EnumWindows = ctypes.windll.user32.EnumWindows
@@ -42,13 +41,25 @@ GetClassName = ctypes.windll.user32.GetClassNameW
 ShowWindow = ctypes.windll.user32.ShowWindow
 SetConsoleCtrlHandler = ctypes.windll.kernel32.SetConsoleCtrlHandler
 IsHungAppWindow = ctypes.windll.user32.IsHungAppWindow
+GetCursorPos = ctypes.windll.user32.GetCursorPos
+SetCursorPos = ctypes.windll.user32.SetCursorPos
+mouse_event = ctypes.windll.user32.mouse_event
 
 class Player:
   def __init__(self):
     self.hwnd = None
     self.player = None
+    self.visible = False
     os.system('taskkill /f /im ' + PROCESS_NAME)
   
+  def get_global_mouse_position(self):
+    class POINT(Structure):
+      _fields_ = [("x", c_ulong), ("y", c_ulong)]
+
+    pt = POINT()
+    GetCursorPos(byref(pt))
+    return { "x": pt.x, "y": pt.y }
+
   def get_player_window(self):
     self.hwnd = None
     def foreach_window(hwnd, lParam):
@@ -80,6 +91,17 @@ class Player:
 
   def hide(self):
     ShowWindow(self.hwnd, HIDE_WIN)
+    if self.visible is True:
+      self.clickthru()
+    
+    self.visible = False
+
+  def clickthru(self):
+    #print self.get_global_mouse_position()
+    SetCursorPos(1, 1)
+    mouse_event(2, 0, 0, 0, 0) # left down
+    mouse_event(4, 0, 0, 0, 0) # left up
+    
 
   def show(self):
     # if the player hangs, restart again. cannot test to see if it works
@@ -87,8 +109,9 @@ class Player:
       print "hang"
       self.kill()
       return
-    
+
     ShowWindow(self.hwnd, SHOW_WIN)
+    self.visible = True
 
   def kill(self):
     self.hwnd = None
@@ -126,4 +149,3 @@ if __name__ == '__main__':
       else:
         player.hide()
     
-
