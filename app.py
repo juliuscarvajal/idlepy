@@ -5,18 +5,8 @@ import pywinauto
 from pywinauto import Application, timings, findwindows
 from pywinauto.controls.HwndWrapper import HwndWrapper
 
-'''
-import win32gui
-import win32api
-import win32con
-'''
-
 import ctypes
-from ctypes import Structure, c_ulong, byref
-
-import sys
 import os
-import subprocess
 from idle import idle_check
 import time
 
