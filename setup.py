@@ -10,15 +10,7 @@ os.system('taskkill /f /im ' + app_name)
 setup(
   options = {'py2exe' : { 'optimize' : 2}},
   windows = [{'script' : "app.py"}],
+  data_files = [('', ['config.ini', 'user.ini', 'forever.bat'])],
   zipfile = None,
 )
 
-'''
-setup(
-  name = 'coates-screen-saver',
-  version = '1.0',
-  scripts = ['app.py', 'idle.py'],
-  description = 'Coates Digital Screen Saver Application',
-  author = 'Coates Digital'
-)
-'''

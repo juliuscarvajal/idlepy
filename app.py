@@ -1,6 +1,16 @@
 # This only works on Windows
 # TODO: Detect player crash (chrome) and react to it.
 
+import pywinauto
+from pywinauto import Application, timings, findwindows
+from pywinauto.controls.HwndWrapper import HwndWrapper
+
+'''
+import win32gui
+import win32api
+import win32con
+'''
+
 import ctypes
 from ctypes import Structure, c_ulong, byref
 
@@ -8,116 +18,123 @@ import sys
 import os
 import subprocess
 from idle import idle_check
+import time
 
 import ConfigParser
 Config = ConfigParser.ConfigParser()
 Config.read('config.ini')
 
+User = ConfigParser.ConfigParser()
+User.read('user.ini')
+
 # constants
 # https://msdn.microsoft.com/en-us/library/windows/desktop/ms633548(v=vs.85).aspx
 try:
-  IDLE_TRIGGER = int(Config.get('DEFAULT', 'IDLE_TRIGGER'))
+  IDLE_TRIGGER = int(User.get('DEFAULT', 'IDLE_TRIGGER'))
   PLAYER_CLASS_NAME = Config.get('DEFAULT', 'PLAYER_CLASS_NAME')
   SHOW_WIN = 3
   HIDE_WIN = 6
+  KIOSK_CLASS_NAME = Config.get('DEFAULT', 'KIOSK_CLASS_NAME')
+  KIOSK_WINDOW_NAME = Config.get('DEFAULT', 'KIOSK_WINDOW_NAME')
+  DELAY_BEFORE_SHOW = int(User.get('DEFAULT', 'DELAY_BEFORE_SHOW')) / 1000
+  DELAY_BEFORE_HIDE = int(User.get('DEFAULT', 'DELAY_BEFORE_HIDE')) / 1000
   PROCESS_NAME = Config.get('DEFAULT', 'PROCESS_NAME')
   BROWSER_PATH = Config.get('DEFAULT', 'BROWSER_PATH')
-  URL = Config.get('DEFAULT', 'URL')
+  URL = User.get('DEFAULT', 'URL')
 except:
   IDLE_TRIGGER = 5
   PLAYER_CLASS_NAME = 'Chrome_WidgetWin_1'
   SHOW_WIN = 3
   HIDE_WIN = 6
+  KIOSK_CLASS_NAME = ''
+  KIOSK_WINDOW_NAME = ''
+  DELAY_BEFORE_SHOW = 0
+  DELAY_BEFORE_HIDE = 0
   PROCESS_NAME = 'chrome.exe'
   BROWSER_PATH = 'C:/Program Files/Google/Chrome/Application/chrome.exe'
   URL = ''
 
 # Shortcuts to win32 apis
-EnumWindows = ctypes.windll.user32.EnumWindows
-EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
-GetWindowTextLength = ctypes.windll.user32.GetWindowTextLengthW
-IsWindowVisible = ctypes.windll.user32.IsWindowVisible
-GetClassName = ctypes.windll.user32.GetClassNameW
-ShowWindow = ctypes.windll.user32.ShowWindow
 SetConsoleCtrlHandler = ctypes.windll.kernel32.SetConsoleCtrlHandler
 IsHungAppWindow = ctypes.windll.user32.IsHungAppWindow
-GetCursorPos = ctypes.windll.user32.GetCursorPos
-SetCursorPos = ctypes.windll.user32.SetCursorPos
-mouse_event = ctypes.windll.user32.mouse_event
-
+  
 class Player:
   def __init__(self):
-    self.hwnd = None
-    self.player = None
+    print "DELAYS H/S", DELAY_BEFORE_HIDE, DELAY_BEFORE_SHOW
+    self.player = Application()
     self.visible = False
-    os.system('taskkill /f /im ' + PROCESS_NAME)
+    self.kill()
+
+  def get_player(self):
+    try:
+      return findwindows.find_window(class_name = PLAYER_CLASS_NAME)
+    except Exception, err:
+      raise err
   
-  def get_global_mouse_position(self):
-    class POINT(Structure):
-      _fields_ = [("x", c_ulong), ("y", c_ulong)]
+  def get_kiosk(self):
+    try:
+      return findwindows.find_window(title = KIOSK_WINDOW_NAME)
+    except Exception, err:
+      raise err
 
-    pt = POINT()
-    GetCursorPos(byref(pt))
-    return { "x": pt.x, "y": pt.y }
-
-  def get_player_window(self):
-    self.hwnd = None
-    def foreach_window(hwnd, lParam):
-      if IsWindowVisible(hwnd):
-        length = GetWindowTextLength(hwnd)
-        buff = ctypes.create_unicode_buffer(length + 1)
-        GetClassName(hwnd, buff, length + 1)
- 
-        if buff.value == PLAYER_CLASS_NAME:
-            print buff.value
-            self.hwnd = hwnd
-
-      return True
-    EnumWindows(EnumWindowsProc(foreach_window), 0)    
-
-  def ready(self):
-    if self.player is None or self.player.poll() is not None:
+  def ready(self):    
+    try:
+      timings.WaitUntilPasses(2, 0.5, self.get_player)
+    except:
       self.run()
-    
-    if self.hwnd is None:
-      self.get_player_window()
-    
-    return self.hwnd is not None
+      return False
+
+    return True
 
   def run(self):
     print "running player"
-    self.kill()    
-    self.player = subprocess.Popen([BROWSER_PATH, '--disable-session-crashed-bubble', '--disable-infobars', '--kiosk', URL])            
-
+    args = '--disable-session-crashed-bubble' + ' ' + '--disable-infobars' + ' ' + '--kiosk'
+    self.player.start_(BROWSER_PATH + ' ' + args + ' ' + URL)
+    
   def hide(self):
-    ShowWindow(self.hwnd, HIDE_WIN)
     if self.visible is True:
       self.clickthru()
+      if DELAY_BEFORE_HIDE > 0:
+        time.sleep(DELAY_BEFORE_HIDE)
     
-    self.visible = False
-
-  def clickthru(self):
-    #print self.get_global_mouse_position()
-    SetCursorPos(1, 1)
-    mouse_event(2, 0, 0, 0, 0) # left down
-    mouse_event(4, 0, 0, 0, 0) # left up
-    
+    try:    
+      player = self.get_player()
+      HwndWrapper(player).Minimize()
+      self.visible = False
+    except:
+      print "No player running"
 
   def show(self):
+    if self.visible is False and DELAY_BEFORE_SHOW > 0:
+      time.sleep(DELAY_BEFORE_SHOW) 
+
+
+    try:
+      player = self.get_player()
+      if self.hang(player):
+        return
+      HwndWrapper(player).Maximize()
+      self.visible = True
+    except:
+      print "No player running"
+    
+  def clickthru(self):
+    try:
+      kiosk = self.get_kiosk()
+      HwndWrapper(kiosk).ClickInput()
+    except:
+      print "No kiosk running"
+
+  def hang(self, playerHwnd):
     # if the player hangs, restart again. cannot test to see if it works
-    if IsHungAppWindow(self.hwnd):
+    if IsHungAppWindow(playerHwnd):
       print "hang"
       self.kill()
-      return
-
-    ShowWindow(self.hwnd, SHOW_WIN)
-    self.visible = True
+      return True    
+    return False
 
   def kill(self):
-    self.hwnd = None
-    if self.player is not None:
-      self.player.kill()
-      self.player = None
+    os.system('taskkill /f /im ' + PROCESS_NAME)
     
   def exit_handler(self):
     print "killed self"
@@ -140,7 +157,6 @@ if __name__ == '__main__':
   set_exit_handler(exit_handler)
   
   is_idle = idle_check(IDLE_TRIGGER)
-  
   
   while True:
     if player.ready():

@@ -1,4 +1,4 @@
 :begin
-python app.py
+app.exe
 goto begin
 
