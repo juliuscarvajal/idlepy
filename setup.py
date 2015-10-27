@@ -10,7 +10,8 @@ os.system('taskkill /f /im ' + app_name)
 setup(
   options = {'py2exe' : { 'optimize' : 2}},
   windows = [{'script' : "app.py"}],
-  data_files = [('', ['config.ini', 'user.ini', 'forever.bat'])],
+  #data_files = [('', ['config.ini', 'user.ini', 'forever.bat'])],
+  data_files = [('', ['config.ini', 'forever.bat'])],
   zipfile = None,
 )
 

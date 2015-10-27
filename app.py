@@ -49,11 +49,24 @@ SetConsoleCtrlHandler = ctypes.windll.kernel32.SetConsoleCtrlHandler
 IsHungAppWindow = ctypes.windll.user32.IsHungAppWindow
   
 class Player:
+  def dummy(self):
+    windows = findwindows.enum_windows()
+    for win in windows:
+      w = HwndWrapper(win)
+      if w.IsVisible():
+        print w.Class(), w.ProcessID()
+
+    h = findwindows.find_window(title_re = KIOSK_WINDOW_NAME)
+    print h
+    print HwndWrapper(h).Class()
+      
   def __init__(self):
     print "DELAYS H/S", DELAY_BEFORE_HIDE, DELAY_BEFORE_SHOW
     self.player = Application()
+    self.kiosk = Application()
     self.visible = False
     self.kill()
+    #self.dummy()
 
   def get_player(self):
     try:
@@ -63,7 +76,7 @@ class Player:
   
   def get_kiosk(self):
     try:
-      return findwindows.find_window(title = KIOSK_WINDOW_NAME)
+      return findwindows.find_window(title_re = KIOSK_WINDOW_NAME)
     except Exception, err:
       raise err
 
@@ -77,27 +90,27 @@ class Player:
     return True
 
   def run(self):
-    print "running player"
+    print "Running player"
     args = '--disable-session-crashed-bubble' + ' ' + '--disable-infobars' + ' ' + '--kiosk'
     self.player.start_(BROWSER_PATH + ' ' + args + ' ' + URL)
     
-  def hide(self):
+  def hide(self):    
+    try:    
+      player = self.get_player()
+      HwndWrapper(player).Minimize()
+    except:
+      print "No player running"
+
     if self.visible is True:
       self.clickthru()
       if DELAY_BEFORE_HIDE > 0:
         time.sleep(DELAY_BEFORE_HIDE)
-    
-    try:    
-      player = self.get_player()
-      HwndWrapper(player).Minimize()
-      self.visible = False
-    except:
-      print "No player running"
+
+    self.visible = False
 
   def show(self):
     if self.visible is False and DELAY_BEFORE_SHOW > 0:
       time.sleep(DELAY_BEFORE_SHOW) 
-
 
     try:
       player = self.get_player()
@@ -147,11 +160,10 @@ if __name__ == '__main__':
   set_exit_handler(exit_handler)
   
   is_idle = idle_check(IDLE_TRIGGER)
-  
+
   while True:
     if player.ready():
       if next(is_idle):
         player.show()
       else:
         player.hide()
-    
