@@ -1,6 +1,11 @@
 # This only works on Windows
 # TODO: Detect player crash (chrome) and react to it.
 
+import logging
+logging.basicConfig(filename = './app.log', filemode = 'w', level = logging.DEBUG)
+Logger = logging.getLogger(__name__)
+#Logger.setLevel(logging.DEBUG)
+
 import pywinauto
 from pywinauto import Application, timings, findwindows
 from pywinauto.controls.HwndWrapper import HwndWrapper
@@ -54,19 +59,22 @@ class Player:
     for win in windows:
       w = HwndWrapper(win)
       if w.IsVisible():
-        print w.Class(), w.ProcessID()
+        Logger.info('[' + w.Class() + '] -- [' + str(w.ProcessID()) + ']')
 
-    h = findwindows.find_window(title_re = KIOSK_WINDOW_NAME)
-    print h
-    print HwndWrapper(h).Class()
+    try:
+      h = findwindows.find_window(class_name_re = KIOSK_CLASS_NAME) #title_re = KIOSK_WINDOW_NAME)
+      Logger.info('Kiosk hwnd: ' + str(h))
+      Logger.info('Kiosk class: ' + HwndWrapper(h).Class())
+    except:
+      Logger.info("No kiosk running")
       
   def __init__(self):
-    print "DELAYS H/S", DELAY_BEFORE_HIDE, DELAY_BEFORE_SHOW
+    Logger.info("DELAYS H/S", DELAY_BEFORE_HIDE, DELAY_BEFORE_SHOW)
     self.player = Application()
     self.kiosk = Application()
     self.visible = False
     self.kill()
-    #self.dummy()
+    self.dummy()
 
   def get_player(self):
     try:
@@ -76,7 +84,10 @@ class Player:
   
   def get_kiosk(self):
     try:
-      return findwindows.find_window(title_re = KIOSK_WINDOW_NAME)
+      h = findwindows.find_window(class_name_re = KIOSK_CLASS_NAME) #title_re = KIOSK_WINDOW_NAME)
+      Logger.info('Kiosk hwnd: ' + str(h))
+      Logger.info('Kiosk class: ' + HwndWrapper(h).Class())      
+      return h
     except Exception, err:
       raise err
 
@@ -90,23 +101,31 @@ class Player:
     return True
 
   def run(self):
-    print "Running player"
+    Logger.info("Running player")
     args = '--disable-session-crashed-bubble' + ' ' + '--disable-infobars' + ' ' + '--kiosk'
     self.player.start_(BROWSER_PATH + ' ' + args + ' ' + URL)
-    
-  def hide(self):    
-    try:    
-      player = self.get_player()
-      HwndWrapper(player).Minimize()
-    except:
-      print "No player running"
 
+  def clickthru(self):
+    Logger.debug('clickthru')
+    try:
+      kiosk = self.get_kiosk()
+      HwndWrapper(kiosk).ClickInput()
+    except:
+      Logger.info("No kiosk running")
+    
+  def hide(self):
     if self.visible is True:
       self.clickthru()
       if DELAY_BEFORE_HIDE > 0:
         time.sleep(DELAY_BEFORE_HIDE)
 
     self.visible = False
+    
+    try:    
+      player = self.get_player()
+      HwndWrapper(player).Minimize()
+    except:
+      Logger.info("No player running")
 
   def show(self):
     if self.visible is False and DELAY_BEFORE_SHOW > 0:
@@ -119,19 +138,12 @@ class Player:
       HwndWrapper(player).Maximize()
       self.visible = True
     except:
-      print "No player running"
+      Logger.info("No player running")
     
-  def clickthru(self):
-    try:
-      kiosk = self.get_kiosk()
-      HwndWrapper(kiosk).ClickInput()
-    except:
-      print "No kiosk running"
-
   def hang(self, playerHwnd):
     # if the player hangs, restart again. cannot test to see if it works
     if IsHungAppWindow(playerHwnd):
-      print "hang"
+      logging.info("Hang")
       self.kill()
       return True    
     return False
@@ -140,7 +152,7 @@ class Player:
     os.system('taskkill /f /im ' + PROCESS_NAME)
     
   def exit_handler(self):
-    print "killed self"
+    Logger.info("killed self")
     self.kill()
 
 if __name__ == '__main__':
