@@ -6,7 +6,7 @@ logging.basicConfig(filename = './app.log', filemode = 'w', level = logging.DEBU
 Logger = logging.getLogger(__name__)
 
 import pywinauto
-from pywinauto import Application, timings, findwindows
+from pywinauto import Application, timings, findwindows, win32structures, win32functions
 from pywinauto.controls.HwndWrapper import HwndWrapper
 
 import ctypes
@@ -28,8 +28,6 @@ try:
   PLAYER_CLASS_NAME = Config.get('DEFAULT', 'PLAYER_CLASS_NAME')
   SHOW_WIN = 3
   HIDE_WIN = 6
-  KIOSK_CLICK_X = int(Config.get('DEFAULT', 'KIOSK_CLICK_X'))
-  KIOSK_CLICK_Y = int(Config.get('DEFAULT', 'KIOSK_CLICK_Y'))
   KIOSK_FIND_BY = Config.get('DEFAULT', 'KIOSK_FIND_BY')
   KIOSK_CLASS_NAME = Config.get('DEFAULT', 'KIOSK_CLASS_NAME')
   KIOSK_WINDOW_NAME = Config.get('DEFAULT', 'KIOSK_WINDOW_NAME')
@@ -43,8 +41,6 @@ except:
   PLAYER_CLASS_NAME = 'Chrome_WidgetWin_1'
   SHOW_WIN = 3
   HIDE_WIN = 6
-  KIOSK_CLICK_X = 0
-  KIOSK_CLICK_Y = 0
   KIOSK_FIND_BY = ''
   KIOSK_CLASS_NAME = ''
   KIOSK_WINDOW_NAME = ''
@@ -77,7 +73,7 @@ class Player:
     self.kiosk = Application()
     self.visible = False
     self.kill()
-    self.dummy()
+    #self.dummy()
 
   def get_player(self):
     try:
@@ -114,10 +110,17 @@ class Player:
     self.player.start_(BROWSER_PATH + ' ' + args + ' ' + URL)
 
   def clickthru(self):
-    Logger.debug('clickthru')
     try:
       kiosk = self.get_kiosk()
-      HwndWrapper(kiosk).ClickInput(coords = (KIOSK_CLICK_X, KIOSK_CLICK_Y))
+
+      rect = win32structures.RECT()
+      win32functions.GetWindowRect(kiosk, ctypes.byref(rect))
+
+      x = rect.right
+      y = rect.bottom
+
+      Logger.debug('Setting clickthru at ' + str(x) + ', ' + str(y))
+      HwndWrapper(kiosk).ClickInput(coords = (x, y))
     except:
       Logger.info("No kiosk running")
     
