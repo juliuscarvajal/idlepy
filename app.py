@@ -4,7 +4,6 @@
 import logging
 logging.basicConfig(filename = './app.log', filemode = 'w', level = logging.DEBUG)
 Logger = logging.getLogger(__name__)
-#Logger.setLevel(logging.DEBUG)
 
 import pywinauto
 from pywinauto import Application, timings, findwindows
@@ -29,10 +28,13 @@ try:
   PLAYER_CLASS_NAME = Config.get('DEFAULT', 'PLAYER_CLASS_NAME')
   SHOW_WIN = 3
   HIDE_WIN = 6
+  KIOSK_CLICK_X = int(Config.get('DEFAULT', 'KIOSK_CLICK_X'))
+  KIOSK_CLICK_Y = int(Config.get('DEFAULT', 'KIOSK_CLICK_Y'))
+  KIOSK_FIND_BY = Config.get('DEFAULT', 'KIOSK_FIND_BY')
   KIOSK_CLASS_NAME = Config.get('DEFAULT', 'KIOSK_CLASS_NAME')
   KIOSK_WINDOW_NAME = Config.get('DEFAULT', 'KIOSK_WINDOW_NAME')
-  DELAY_BEFORE_SHOW = int(User.get('DEFAULT', 'DELAY_BEFORE_SHOW')) / 1000
-  DELAY_BEFORE_HIDE = int(User.get('DEFAULT', 'DELAY_BEFORE_HIDE')) / 1000
+  DELAY_BEFORE_SHOW = float(User.get('DEFAULT', 'DELAY_BEFORE_SHOW'))
+  DELAY_BEFORE_HIDE = float(User.get('DEFAULT', 'DELAY_BEFORE_HIDE'))
   PROCESS_NAME = Config.get('DEFAULT', 'PROCESS_NAME')
   BROWSER_PATH = Config.get('DEFAULT', 'BROWSER_PATH')
   URL = User.get('DEFAULT', 'URL')
@@ -41,6 +43,9 @@ except:
   PLAYER_CLASS_NAME = 'Chrome_WidgetWin_1'
   SHOW_WIN = 3
   HIDE_WIN = 6
+  KIOSK_CLICK_X = 0
+  KIOSK_CLICK_Y = 0
+  KIOSK_FIND_BY = ''
   KIOSK_CLASS_NAME = ''
   KIOSK_WINDOW_NAME = ''
   DELAY_BEFORE_SHOW = 0
@@ -59,17 +64,15 @@ class Player:
     for win in windows:
       w = HwndWrapper(win)
       if w.IsVisible():
-        Logger.info('[' + w.Class() + '] -- [' + str(w.ProcessID()) + ']')
+        Logger.info('[' + w.Class() + '] -- [' + w.WindowText() + '] -- [' + str(w.ProcessID()) + ']')
 
     try:
-      h = findwindows.find_window(class_name_re = KIOSK_CLASS_NAME) #title_re = KIOSK_WINDOW_NAME)
-      Logger.info('Kiosk hwnd: ' + str(h))
-      Logger.info('Kiosk class: ' + HwndWrapper(h).Class())
+      h = self.get_kiosk()
     except:
       Logger.info("No kiosk running")
       
   def __init__(self):
-    Logger.info("DELAYS H/S", DELAY_BEFORE_HIDE, DELAY_BEFORE_SHOW)
+    Logger.info("DELAYS H/S " + str(DELAY_BEFORE_HIDE) + ' ' + str(DELAY_BEFORE_SHOW))
     self.player = Application()
     self.kiosk = Application()
     self.visible = False
@@ -84,9 +87,14 @@ class Player:
   
   def get_kiosk(self):
     try:
-      h = findwindows.find_window(class_name_re = KIOSK_CLASS_NAME) #title_re = KIOSK_WINDOW_NAME)
+      if KIOSK_FIND_BY == 'KIOSK_WINDOW_NAME':
+        h = findwindows.find_window(title = KIOSK_WINDOW_NAME)
+      elif KIOSK_FIND_BY == 'KIOSK_CLASS_NAME':
+        h = findwindows.find_window(class_name_re = KIOSK_CLASS_NAME)
+      
       Logger.info('Kiosk hwnd: ' + str(h))
-      Logger.info('Kiosk class: ' + HwndWrapper(h).Class())      
+      Logger.info('Kiosk class: ' + HwndWrapper(h).Class())
+      Logger.info('Kiosk title: ' + HwndWrapper(h).WindowText())
       return h
     except Exception, err:
       raise err
@@ -109,26 +117,26 @@ class Player:
     Logger.debug('clickthru')
     try:
       kiosk = self.get_kiosk()
-      HwndWrapper(kiosk).ClickInput()
+      HwndWrapper(kiosk).ClickInput(coords = (KIOSK_CLICK_X, KIOSK_CLICK_Y))
     except:
       Logger.info("No kiosk running")
     
   def hide(self):
-    if self.visible is True:
-      self.clickthru()
-      if DELAY_BEFORE_HIDE > 0:
-        time.sleep(DELAY_BEFORE_HIDE)
-
-    self.visible = False
-    
     try:    
       player = self.get_player()
       HwndWrapper(player).Minimize()
     except:
       Logger.info("No player running")
+    
+    if self.visible is True:
+      self.clickthru()
+      if DELAY_BEFORE_HIDE > 0.0:
+        time.sleep(DELAY_BEFORE_HIDE)
+
+    self.visible = False          
 
   def show(self):
-    if self.visible is False and DELAY_BEFORE_SHOW > 0:
+    if self.visible is False and DELAY_BEFORE_SHOW > 0.0:
       time.sleep(DELAY_BEFORE_SHOW) 
 
     try:
