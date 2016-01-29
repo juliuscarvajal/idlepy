@@ -1,4 +1,7 @@
 *.log
 *.pyc
 build
-dist
+dist*
+*.wixobj
+*.wixpdb
+
