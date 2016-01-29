@@ -33,8 +33,6 @@
                         <File Id="API_MS_WIN_CORE_SYNCH_L1_1_0.DLL" Name="API-MS-Win-Core-Synch-L1-1-0.dll" Source="dist\API-MS-Win-Core-Synch-L1-1-0.dll" />
                         <File Id="API_MS_WIN_CORE_SYSINFO_L1_1_0.DLL" Name="API-MS-Win-Core-SysInfo-L1-1-0.dll" Source="dist\API-MS-Win-Core-SysInfo-L1-1-0.dll" />
                         <File Id="APP.EXE" Name="app.exe" Source="dist\app.exe" />
-                        <File Id="APP.EXE.LOG" Name="app.exe.log" Source="dist\app.exe.log" />
-                        <File Id="APP.LOG" Name="app.log" Source="dist\app.log" />
                         <File Id="BZ2.PYD" Name="bz2.pyd" Source="dist\bz2.pyd" />
                         <File Id="CONFIG.INI" Name="config.ini" Source="dist\config.ini" />
                         <File Id="FOREVER.BAT" Name="forever.bat" Source="dist\forever.bat" />
