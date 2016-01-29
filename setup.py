@@ -13,7 +13,7 @@ setup(
   description='A background app that switches to the player when the kiosk is idle and restores the kiosk app once the kiosk gains user interaction.',
   author='Julius Carvajal',
   author_email='juliuscarvajal21@gmail.com',
-  options = {'py2exe' : {'optimize' : 2, 'bundle_files' : 1}},
+  options = {'py2exe' : {'optimize' : 2}},
   windows = [{'script' : "app.py"}],
   data_files = [('', ['config.ini', 'user.ini', 'forever.bat'])],
   #data_files = [('', ['config.ini', 'forever.bat'])],
