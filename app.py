@@ -1,6 +1,8 @@
 # This only works on Windows
 # TODO: Detect player crash (chrome) and react to it.
 
+import socket
+
 import logging
 logging.basicConfig(filename = './app.log', filemode = 'w', level = logging.DEBUG)
 Logger = logging.getLogger(__name__)
@@ -53,7 +55,7 @@ except:
 # Shortcuts to win32 apis
 SetConsoleCtrlHandler = ctypes.windll.kernel32.SetConsoleCtrlHandler
 IsHungAppWindow = ctypes.windll.user32.IsHungAppWindow
-  
+
 class Player:
   def dummy(self):
     windows = findwindows.enum_windows()
@@ -66,7 +68,7 @@ class Player:
       h = self.get_kiosk()
     except:
       Logger.info("No kiosk running")
-      
+
   def __init__(self):
     Logger.info("DELAYS H/S " + str(DELAY_BEFORE_HIDE) + ' ' + str(DELAY_BEFORE_SHOW))
     self.player = Application()
@@ -80,14 +82,14 @@ class Player:
       return findwindows.find_window(class_name = PLAYER_CLASS_NAME)
     except Exception, err:
       raise err
-  
+
   def get_kiosk(self):
     try:
       if KIOSK_FIND_BY == 'KIOSK_WINDOW_NAME':
         h = findwindows.find_window(title = KIOSK_WINDOW_NAME)
       elif KIOSK_FIND_BY == 'KIOSK_CLASS_NAME':
         h = findwindows.find_window(class_name_re = KIOSK_CLASS_NAME)
-      
+
       Logger.info('Kiosk hwnd: ' + str(h))
       Logger.info('Kiosk class: ' + HwndWrapper(h).Class())
       Logger.info('Kiosk title: ' + HwndWrapper(h).WindowText())
@@ -95,7 +97,7 @@ class Player:
     except Exception, err:
       raise err
 
-  def ready(self):    
+  def ready(self):
     try:
       timings.WaitUntilPasses(2, 0.5, self.get_player)
     except:
@@ -105,9 +107,18 @@ class Player:
     return True
 
   def run(self):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(('8.8.8.8', 0))  # connecting to a UDP address doesn't send packets
+    local_ip_address, port = s.getsockname()
+    s.close();
+
+
+    print("IP address:", local_ip_address.split('.')[:3]);
+
+
     Logger.info("Running player")
     args = '--disable-session-crashed-bubble' + ' ' + '--disable-infobars' + ' ' + '--kiosk'
-    self.player.start_(BROWSER_PATH + ' ' + args + ' ' + URL)
+    self.player.start(BROWSER_PATH + ' ' + args + ' ' + URL)
 
   def clickthru(self):
     try:
@@ -123,24 +134,24 @@ class Player:
       HwndWrapper(kiosk).ClickInput(coords = (x, y))
     except:
       Logger.info("No kiosk running")
-    
+
   def hide(self):
-    try:    
+    try:
       player = self.get_player()
       HwndWrapper(player).Minimize()
     except:
       Logger.info("No player running")
-    
+
     if self.visible is True:
       self.clickthru()
       if DELAY_BEFORE_HIDE > 0.0:
         time.sleep(DELAY_BEFORE_HIDE)
 
-    self.visible = False          
+    self.visible = False
 
   def show(self):
     if self.visible is False and DELAY_BEFORE_SHOW > 0.0:
-      time.sleep(DELAY_BEFORE_SHOW) 
+      time.sleep(DELAY_BEFORE_SHOW)
 
     try:
       player = self.get_player()
@@ -150,18 +161,18 @@ class Player:
       self.visible = True
     except:
       Logger.info("No player running")
-    
+
   def hang(self, playerHwnd):
     # if the player hangs, restart again. cannot test to see if it works
     if IsHungAppWindow(playerHwnd):
       logging.info("Hang")
       self.kill()
-      return True    
+      return True
     return False
 
   def kill(self):
     os.system('taskkill /f /im ' + PROCESS_NAME)
-    
+
   def exit_handler(self):
     Logger.info("killed self")
     self.kill()
@@ -181,7 +192,7 @@ if __name__ == '__main__':
 
   exit_handler = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_uint)(exit_handler)
   set_exit_handler(exit_handler)
-  
+
   is_idle = idle_check(IDLE_TRIGGER)
 
   while True:
