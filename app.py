@@ -90,8 +90,8 @@ class Player:
     new_source = None
 
     if current_source is None:
+      print("Intial...")
       current_source = self.scan_source_player()
-      print("current", current_source)
     else:
       current_source = self.sourcePlayer
       print("verify if it is still alive though: " + current_source)
@@ -167,6 +167,8 @@ class Player:
     source_player = None
 
     url = 'http://' + ip + '/system/dev/packageStamp'
+    print("url", url)
+
     req = urllib2.Request(url)
     try:
       res = urllib2.urlopen(req, timeout)
@@ -187,7 +189,7 @@ class Player:
     for i in range(MP_RANGE_MIN, MP_RANGE_MAX):
       try:
         ip = self.build_source_player_ip(str(i))
-        player = self.get_source_player(ip)
+        player = self.get_source_player(ip, timeout=1)
         if player is not None:
           self.sourcePlayer = player
           break
