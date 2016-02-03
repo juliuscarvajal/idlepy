@@ -138,8 +138,6 @@ class Player:
 
     if local_ip is None:
       Logger.info("Error: Cannot get local IP")
-    else:
-      Logger.info("Local IP: " + local_ip)
 
     return local_ip
 
@@ -153,11 +151,9 @@ class Player:
         res = urllib2.urlopen(req, timeout=5)
         code = res.getcode()
         if code == 200:
-          Logger.info('Got a source: ' + url)
           self.sourcePlayer = url + '/player'
           break
       except:
-        Logger.info('Not a source: ' + url)
         pass
 
     return self.sourcePlayer
