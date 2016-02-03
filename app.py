@@ -1,7 +1,8 @@
 # This only works on Windows
 # TODO: Detect player crash (chrome) and react to it.
 
-import socket
+import urllib2
+import netifaces
 
 import logging
 logging.basicConfig(filename = './app.log', filemode = 'w', level = logging.DEBUG)
@@ -38,6 +39,9 @@ try:
   PROCESS_NAME = Config.get('DEFAULT', 'PROCESS_NAME')
   BROWSER_PATH = Config.get('DEFAULT', 'BROWSER_PATH')
   URL = User.get('DEFAULT', 'URL')
+  MP_HQ = int(Config.get('DEFAULT', 'MP_HQ'))
+  MP_RANGE_MIN = int(Config.get('DEFAULT', 'MP_RANGE_MIN'))
+  MP_RANGE_MAX = int(Config.get('DEFAULT', 'MP_RANGE_MAX'))
 except:
   IDLE_TRIGGER = 5
   PLAYER_CLASS_NAME = 'Chrome_WidgetWin_1'
@@ -51,6 +55,9 @@ except:
   PROCESS_NAME = 'chrome.exe'
   BROWSER_PATH = 'C:/Program Files/Google/Chrome/Application/chrome.exe'
   URL = ''
+  MP_HQ = 100
+  MP_RANGE_MIN = 225
+  MP_RANGE_MAX = 254
 
 # Shortcuts to win32 apis
 SetConsoleCtrlHandler = ctypes.windll.kernel32.SetConsoleCtrlHandler
@@ -106,19 +113,50 @@ class Player:
 
     return True
 
+  def get_local_ip(self):
+    local_ip = None
+    for ifname in netifaces.interfaces():
+      try:
+        for i in netifaces.ifaddresses(ifname)[netifaces.AF_INET]:
+          a = i['addr']
+          first = a.split('.')[0]
+
+          if first != '127' and first != '169':
+            local_ip = a
+      except:
+        pass
+
+    if local_ip is None:
+      Logger.info("Error: Cannot get local IP")
+    else:
+      Logger.info("Local IP: " + local_ip)
+
+    return local_ip
+
+  def get_source_player(self):
+    source_player_ip = None
+
+    ip = self.get_local_ip().split('.')[:3]
+
+    for i in range(MP_RANGE_MIN, MP_RANGE_MAX):
+      url = '.'.join(ip) + '.' + str(MP_RANGE_MIN)
+      req = urllib2.Request('http://' + url + '/system/dev/packageStamp')
+      try:
+        res = urllib2.urlopen(req)
+        code = res.getcode()
+        if code == 200:
+          Logger.info('Got a source: ' + url)
+          return url + '/player'
+      except:
+        Logger.info('Not a source: ' + url)
+        pass
+
   def run(self):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(('8.8.8.8', 0))  # connecting to a UDP address doesn't send packets
-    local_ip_address, port = s.getsockname()
-    s.close();
-
-
-    print("IP address:", local_ip_address.split('.')[:3]);
-
+    dmb_url = self.get_source_player() #TODO: if no url is found... what to do?
 
     Logger.info("Running player")
     args = '--disable-session-crashed-bubble' + ' ' + '--disable-infobars' + ' ' + '--kiosk'
-    self.player.start(BROWSER_PATH + ' ' + args + ' ' + URL)
+    self.player.start(BROWSER_PATH + ' ' + args + ' ' + dmb_url) #URL)
 
   def clickthru(self):
     try:
