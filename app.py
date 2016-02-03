@@ -87,10 +87,22 @@ class Player:
 
   def get_player(self):
     current_source = self.sourcePlayer
-    source_url = self.get_source_player()
+    new_source = None
+
+    if current_source is None:
+      current_source = self.scan_source_player()
+      print("current", current_source)
+    else:
+      current_source = self.sourcePlayer
+      print("verify if it is still alive though: " + current_source)
+
+      if self.source_player_alive(current_source, timeout=0.3) is False:
+        print("self.sourcePlayer " + current_source + " is dead. get a new source")
+        new_source = self.scan_source_player()
 
     # The current source is no longer available and a new source was found
-    if source_url != current_source:
+    if new_source != current_source:
+      Logger.info("Local IP: " + self.get_local_ip())
       Logger.info("Changing source player from " + str(current_source) + " to " + source_url)
       self.kill()
       self.run()
@@ -141,17 +153,43 @@ class Player:
 
     return local_ip
 
-  def get_source_player(self):
-    ip = self.get_local_ip().split('.')[:3]
+  def source_player_alive(self, ip):
+    source_player = self.get_source_player(ip)
+    print("Is this alive:", source_player)
+    if source_player is None:
+      print("No", ip)
+      return False
+    else:
+      print("Yes", ip)
+      return True
 
+  def get_source_player(self, ip, timeout):
+    source_player = None
+
+    url = 'http://' + ip + '/system/dev/packageStamp'
+    req = urllib2.Request(url)
+    try:
+      res = urllib2.urlopen(req, timeout)
+      code = res.getcode()
+      if code == 200:
+        source_player = ip
+    except:
+      pass
+
+    return source_player
+
+  def build_source_player_ip(self, lastNumber):
+    local_ip = self.get_local_ip().split('.')[:3]
+    return '.'.join(local_ip) + '.' + lastNumber
+
+  def scan_source_player(self):
+    self.sourcePlayer = None
     for i in range(MP_RANGE_MIN, MP_RANGE_MAX):
-      url = '.'.join(ip) + '.' + str(i)
-      req = urllib2.Request('http://' + url + '/system/dev/packageStamp')
       try:
-        res = urllib2.urlopen(req, timeout=5)
-        code = res.getcode()
-        if code == 200:
-          self.sourcePlayer = url + '/player'
+        ip = self.build_source_player_ip(str(i))
+        player = self.get_source_player(ip)
+        if player is not None:
+          self.sourcePlayer = player
           break
       except:
         pass
@@ -162,7 +200,7 @@ class Player:
     if self.sourcePlayer is not None:
       Logger.info("Running player")
       args = '--disable-session-crashed-bubble' + ' ' + '--disable-infobars' + ' ' + '--kiosk'
-      self.player.start(BROWSER_PATH + ' ' + args + ' ' + self.sourcePlayer) #URL)
+      self.player.start(BROWSER_PATH + ' ' + args + ' ' + self.sourcePlayer + '/player') #URL)
 
   def clickthru(self):
     try:
