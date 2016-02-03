@@ -78,6 +78,7 @@ class Player:
 
   def __init__(self):
     Logger.info("DELAYS H/S " + str(DELAY_BEFORE_HIDE) + ' ' + str(DELAY_BEFORE_SHOW))
+    self.sourcePlayer = None
     self.player = Application()
     self.kiosk = Application()
     self.visible = False
@@ -85,6 +86,15 @@ class Player:
     #self.dummy()
 
   def get_player(self):
+    current_source = self.sourcePlayer
+    source_url = self.get_source_player()
+
+    # The current source is no longer available and a new source was found
+    if source_url != current_source:
+      Logger.info("Changing source player from " + str(current_source) + " to " + source_url)
+      self.kill()
+      self.run()
+
     try:
       return findwindows.find_window(class_name = PLAYER_CLASS_NAME)
     except Exception, err:
@@ -134,29 +144,29 @@ class Player:
     return local_ip
 
   def get_source_player(self):
-    source_player_ip = None
-
     ip = self.get_local_ip().split('.')[:3]
 
     for i in range(MP_RANGE_MIN, MP_RANGE_MAX):
-      url = '.'.join(ip) + '.' + str(MP_RANGE_MIN)
+      url = '.'.join(ip) + '.' + str(i)
       req = urllib2.Request('http://' + url + '/system/dev/packageStamp')
       try:
-        res = urllib2.urlopen(req)
+        res = urllib2.urlopen(req, timeout=5)
         code = res.getcode()
         if code == 200:
           Logger.info('Got a source: ' + url)
-          return url + '/player'
+          self.sourcePlayer = url + '/player'
+          break
       except:
         Logger.info('Not a source: ' + url)
         pass
 
-  def run(self):
-    dmb_url = self.get_source_player() #TODO: if no url is found... what to do?
+    return self.sourcePlayer
 
-    Logger.info("Running player")
-    args = '--disable-session-crashed-bubble' + ' ' + '--disable-infobars' + ' ' + '--kiosk'
-    self.player.start(BROWSER_PATH + ' ' + args + ' ' + dmb_url) #URL)
+  def run(self):
+    if self.sourcePlayer is not None:
+      Logger.info("Running player")
+      args = '--disable-session-crashed-bubble' + ' ' + '--disable-infobars' + ' ' + '--kiosk'
+      self.player.start(BROWSER_PATH + ' ' + args + ' ' + self.sourcePlayer) #URL)
 
   def clickthru(self):
     try:

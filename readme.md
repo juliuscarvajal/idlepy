@@ -5,7 +5,9 @@
 - Install py2exe: http://www.py2exe.org/
 - Install netifaces: https://pypi.python.org/pypi/netifaces#downloads
 - Install pywinauto: http://pywinauto.github.io/
-- Install wixEdit: http://wixedit.sourceforge.net/ (optional for creating/editing the installer)
+
+(Optional)
+- Install wixEdit: http://wixedit.sourceforge.net/
 
 
 # To create an installer:
