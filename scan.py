@@ -76,13 +76,17 @@ def scan_source_player():
   player = None
 
   while True:
-    if (player is None) or (player is not None and source_player_alive(player) is False):
+    if player is not None and source_player_alive(player) is False:
+      player = None
+
+    if player is None:
       player = scan_range()
 
     if player is not None:
       yield player
 
     time.sleep(30); # check again after 5 minutes
+    print "Checking again... " + player
 
 
 
