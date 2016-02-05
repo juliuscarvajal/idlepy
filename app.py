@@ -85,6 +85,11 @@ class Player:
     #self.dummy()
 
   def get_player(self):
+    if source_player_alive(self.currentSource) is False:
+      print("current player is dead... find another...")
+      self.kill()
+      self.currentSource = next(self.sourcePlayer)
+
     try:
       return findwindows.find_window(class_name = PLAYER_CLASS_NAME)
     except Exception, err:
@@ -114,14 +119,7 @@ class Player:
     return True
 
   def run(self):
-    current = self.currentSource
-    if source_player_alive(current) is False:
-      print("current player is dead... find another...")
-      self.kill()
-      player = next(self.sourcePlayer)
-    else:
-      print("current player is still alive...")
-      player = current
+    player = self.currentSource
 
     if player is not None:
       Logger.info("Running player")
