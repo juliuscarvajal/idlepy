@@ -1,9 +1,6 @@
 # This only works on Windows
 # TODO: Detect player crash (chrome) and react to it.
 
-import urllib2
-import netifaces
-
 import logging
 logging.basicConfig(filename = './app.log', filemode = 'w', level = logging.DEBUG)
 Logger = logging.getLogger(__name__)
@@ -15,6 +12,7 @@ from pywinauto.controls.HwndWrapper import HwndWrapper
 import ctypes
 import os
 from idle import idle_check
+from scan import scan_source_player, source_player_alive
 import time
 
 import ConfigParser
@@ -78,7 +76,8 @@ class Player:
 
   def __init__(self):
     Logger.info("DELAYS H/S " + str(DELAY_BEFORE_HIDE) + ' ' + str(DELAY_BEFORE_SHOW))
-    self.sourcePlayer = None
+    self.sourcePlayer = scan_source_player()
+    self.currentSource = next(self.sourcePlayer)
     self.player = Application()
     self.kiosk = Application()
     self.visible = False
@@ -86,26 +85,8 @@ class Player:
     #self.dummy()
 
   def get_player(self):
-    current_source = self.sourcePlayer
-    new_source = None
-
-    if current_source is None:
-      print("Intial...")
-      current_source = self.scan_source_player()
-    else:
-      current_source = self.sourcePlayer
-      print("verify if it is still alive though: " + current_source)
-
-      if self.source_player_alive(current_source, timeout=0.3) is False:
-        print("self.sourcePlayer " + current_source + " is dead. get a new source")
-        new_source = self.scan_source_player()
-
-    # The current source is no longer available and a new source was found
-    if new_source != current_source:
-      Logger.info("Local IP: " + self.get_local_ip())
-      Logger.info("Changing source player from " + str(current_source) + " to " + source_url)
-      self.kill()
-      self.run()
+    #player = next(self.sourcePlayer)
+    #print('get player:', player)
 
     try:
       return findwindows.find_window(class_name = PLAYER_CLASS_NAME)
@@ -135,74 +116,21 @@ class Player:
 
     return True
 
-  def get_local_ip(self):
-    local_ip = None
-    for ifname in netifaces.interfaces():
-      try:
-        for i in netifaces.ifaddresses(ifname)[netifaces.AF_INET]:
-          a = i['addr']
-          first = a.split('.')[0]
-
-          if first != '127' and first != '169':
-            local_ip = a
-      except:
-        pass
-
-    if local_ip is None:
-      Logger.info("Error: Cannot get local IP")
-
-    return local_ip
-
-  def source_player_alive(self, ip):
-    source_player = self.get_source_player(ip)
-    print("Is this alive:", source_player)
-    if source_player is None:
-      print("No", ip)
-      return False
-    else:
-      print("Yes", ip)
-      return True
-
-  def get_source_player(self, ip, timeout):
-    source_player = None
-
-    url = 'http://' + ip + '/system/dev/packageStamp'
-    print("url", url)
-
-    req = urllib2.Request(url)
-    try:
-      res = urllib2.urlopen(req, timeout)
-      code = res.getcode()
-      if code == 200:
-        source_player = ip
-    except:
-      pass
-
-    return source_player
-
-  def build_source_player_ip(self, lastNumber):
-    local_ip = self.get_local_ip().split('.')[:3]
-    return '.'.join(local_ip) + '.' + lastNumber
-
-  def scan_source_player(self):
-    self.sourcePlayer = None
-    for i in range(MP_RANGE_MIN, MP_RANGE_MAX):
-      try:
-        ip = self.build_source_player_ip(str(i))
-        player = self.get_source_player(ip, timeout=1)
-        if player is not None:
-          self.sourcePlayer = player
-          break
-      except:
-        pass
-
-    return self.sourcePlayer
-
   def run(self):
-    if self.sourcePlayer is not None:
+    current = self.currentSource
+    if source_player_alive(current) is False:
+      player = next(self.sourcePlayer)
+    else:
+      player = current
+
+    if current != player:
+      print("change from", current, 'to', player)
+      self.kill()
+
+    if player is not None:
       Logger.info("Running player")
       args = '--disable-session-crashed-bubble' + ' ' + '--disable-infobars' + ' ' + '--kiosk'
-      self.player.start(BROWSER_PATH + ' ' + args + ' ' + self.sourcePlayer + '/player') #URL)
+      self.player.start(BROWSER_PATH + ' ' + args + ' ' + player + '/player') #URL)
 
   def clickthru(self):
     try:
