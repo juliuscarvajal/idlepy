@@ -9,6 +9,11 @@
 (Optional)
 - Install wixEdit: http://wixedit.sourceforge.net/
 
+# Build steps:
+```
+cd installer
+python setup.py
+```
 
 # To create an installer:
 - Download latest Wix http://wixtoolset.org/releases/

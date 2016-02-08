@@ -1,8 +1,0 @@
-[DEFAULT]
-KIOSK_FIND_BY: KIOSK_CLASS_NAME
-KIOSK_CLASS_NAME: Notepad
-KIOSK_WINDOW_NAME: config.ini - Notepad
-PLAYER_CLASS_NAME: Chrome_WidgetWin_1
-PROCESS_NAME: chrome.exe
-BROWSER_PATH: C:/Program Files/Google/Chrome/Application/chrome.exe
-
