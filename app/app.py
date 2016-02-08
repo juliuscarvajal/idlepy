@@ -28,12 +28,28 @@ import ConfigParser
 Config = ConfigParser.ConfigParser()
 Config.read('config.ini')
 
-def set_config(section, name, default = None):
+Defaults = ConfigParser.ConfigParser()
+Defaults.read('defaults.ini')
+
+Overrides = ConfigParser.ConfigParser()
+Overrides.read('overrides.ini')
+
+def get_config(config, section, name):
   val = None
   try:
-    val = Config.get(section, name)
+    val = config.get(section, name)
   except:
-    val = '' if default is None else default
+    pass
+  return val
+
+def get_config_value(section, name, fallbackValue = None):
+  val = get_config(Overrides, section, name)
+  if val is None:
+    val = get_config(Config, section, name)
+    if val is None:
+      val = get_config(Defaults, section, name)
+      if val is None:
+        val = '' if fallbackValue is None else fallbackValue
 
   return val
 
@@ -41,14 +57,14 @@ def set_config(section, name, default = None):
 SHOW_WIN = 3
 HIDE_WIN = 6
 
-IDLE_TRIGGER = int(set_config('DEFAULT', 'IDLE_TRIGGER', '5'))
-KIOSK_FIND_BY = set_config('DEFAULT', 'KIOSK_FIND_BY')
-KIOSK_CLASS_NAME = set_config('DEFAULT', 'KIOSK_CLASS_NAME')
-KIOSK_WINDOW_NAME = set_config('DEFAULT', 'KIOSK_WINDOW_NAME')
-PLAYER_CLASS_NAME = set_config('DEFAULT', 'PLAYER_CLASS_NAME', 'Chrome_WidgetWin_1')
-PROCESS_NAME = set_config('DEFAULT', 'PROCESS_NAME', 'chrome.exe')
-BROWSER_PATH = set_config('DEFAULT', 'BROWSER_PATH', 'C:/Program Files/Google/Chrome/Application/chrome.exe')
-MP_SWITCH_INTERVAL = int(set_config('DEFAULT', 'MP_SWITCH_INTERVAL', '300')) # 5 minutes
+IDLE_TRIGGER = int(get_config_value('DEFAULT', 'IDLE_TRIGGER', '119'))
+KIOSK_FIND_BY = get_config_value('DEFAULT', 'KIOSK_FIND_BY', 'KIOSK_WINDOW_NAME')
+KIOSK_CLASS_NAME = get_config_value('DEFAULT', 'KIOSK_CLASS_NAME', 'npKiosk')
+KIOSK_WINDOW_NAME = get_config_value('DEFAULT', 'KIOSK_WINDOW_NAME', 'NGK')
+PLAYER_CLASS_NAME = get_config_value('DEFAULT', 'PLAYER_CLASS_NAME', 'Chrome_WidgetWin_1')
+PROCESS_NAME = get_config_value('DEFAULT', 'PROCESS_NAME', 'chrome.exe')
+BROWSER_PATH = get_config_value('DEFAULT', 'BROWSER_PATH', 'C:/Program Files/Google/Chrome/Application/chrome.exe')
+MP_SWITCH_INTERVAL = int(get_config_value('DEFAULT', 'MP_SWITCH_INTERVAL', '300'))
 
 # Shortcuts to win32 apis
 SetConsoleCtrlHandler = ctypes.windll.kernel32.SetConsoleCtrlHandler

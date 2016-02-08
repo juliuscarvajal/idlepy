@@ -23,6 +23,11 @@ python setup.py
 - In the client machine, Run bundle.exe as admin
 
 
-# Editing installers
-- Use Wix Edit for setup.wxs
-- Use any text editor for bundle.wxs
+# Editing installers:
+- Use WixEdit for setup.wxs
+- Use any text editor for bundle.wxs (WixEdit does not support Bundles)
+
+# Configuration files:
+- config.ini <-- Main configuration settings file.
+- defaults.ini <-- Fallback if config.ini does not exist
+- overrides.ini <-- If this file exists, the config settings in the overrides.ini will override the corresponding settings in config.ini. Config settings not specified in the overrides.ini will follow the settings in config.ini
