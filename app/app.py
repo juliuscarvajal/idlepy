@@ -19,7 +19,7 @@ from pywinauto.controls.HwndWrapper import HwndWrapper
 
 import ctypes
 from idle import idle_check
-from scan import scan_source_player, source_player_alive
+from scan import scan_source_player, source_player_alive, get_local_ip
 import time
 import datetime
 import threading
@@ -70,6 +70,7 @@ class Player:
   '''
 
   def __init__(self):
+    Logger.info("Local IP: " + get_local_ip())
     Logger.info("Switch interval: " + str(MP_SWITCH_INTERVAL))
     self.currentSource = None
     self.player = Application()
@@ -197,6 +198,7 @@ if __name__ == '__main__':
     return t
 
   def scan():
+    Logger.info('Scanning...')
     player.set_source(next(scanner))
 
   scanner = scan_source_player()

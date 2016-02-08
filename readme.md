@@ -15,7 +15,7 @@ cd installer
 python setup.py
 ```
 
-# To create an installer:
+# Creating an installer:
 - Download latest Wix http://wixtoolset.org/releases/
 - Download googlechromestandaloneenterprise.msi
 - Run installer.bat
