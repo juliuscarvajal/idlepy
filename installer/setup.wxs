@@ -2,10 +2,10 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
     <Product Name="Switcheroo" Id="5FCF862B-2DF0-43DA-89F5-27E14903F379" UpgradeCode="A510745B-F6C0-472C-A1BC-2CA53212211E" Language="1033" Version="0.1" Manufacturer="Switcheroo Digital">
         <Package Id="*" InstallerVersion="200" Compressed="yes" />
-        <Media Id="1" Cabinet="CoatesSwitcher.cab" EmbedCab="yes" />
+        <Media Id="1" Cabinet="Switcher.cab" EmbedCab="yes" />
         <Directory Id="TARGETDIR" Name="SourceDir">
             <Directory Id="ProgramFilesFolder">
-                <Directory Id="INSTALLDIR" Name="Coates Switcher">
+                <Directory Id="INSTALLDIR" Name="Switcher">
                     <Component Id="MainExecutable" Guid="AF90FF6A-E5F0-45BD-A4E4-974427796F73">
                         <RemoveFolder Id="INSTALLDIR" On="uninstall" />
                         <File Id="_CTYPES.PYD" Name="_ctypes.pyd" Source="dist\_ctypes.pyd" />

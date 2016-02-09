@@ -59,8 +59,8 @@ HIDE_WIN = 6
 
 IDLE_TRIGGER = int(get_config_value('DEFAULT', 'IDLE_TRIGGER', '119'))
 KIOSK_FIND_BY = get_config_value('DEFAULT', 'KIOSK_FIND_BY', 'KIOSK_WINDOW_NAME')
-KIOSK_CLASS_NAME = get_config_value('DEFAULT', 'KIOSK_CLASS_NAME', 'npKiosk')
-KIOSK_WINDOW_NAME = get_config_value('DEFAULT', 'KIOSK_WINDOW_NAME', 'NGK')
+KIOSK_CLASS_NAME = get_config_value('DEFAULT', 'KIOSK_CLASS_NAME')
+KIOSK_WINDOW_NAME = get_config_value('DEFAULT', 'KIOSK_WINDOW_NAME')
 PLAYER_CLASS_NAME = get_config_value('DEFAULT', 'PLAYER_CLASS_NAME', 'Chrome_WidgetWin_1')
 PROCESS_NAME = get_config_value('DEFAULT', 'PROCESS_NAME', 'chrome.exe')
 BROWSER_PATH = get_config_value('DEFAULT', 'BROWSER_PATH', 'C:/Program Files/Google/Chrome/Application/chrome.exe')
